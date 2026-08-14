@@ -1,0 +1,18 @@
+{
+  "title": "Code for: Exponentiated gradients support effective learning in biologically relevant scenarios with brain-like synaptic distributions",
+  "description": "Simulation and analysis code for Cornford et al. (2026), Neuron.",
+  "license": "MIT",
+  "upload_type": "software",
+  "creators": [
+    {"name": "Cornford, Jonathan"},
+    {"name": "Pogodin, Roman"},
+    {"name": "Ghosh, Arna"},
+    {"name": "Sheng, Kaiwen"},
+    {"name": "Bicknell, Brendan A."},
+    {"name": "Codol, Olivier"},
+    {"name": "Li, Pingsheng"},
+    {"name": "Clark, Beverley A."},
+    {"name": "Lajoie, Guillaume"},
+    {"name": "Richards, Blake A."}
+  ]
+}
