@@ -1,0 +1,68 @@
+defaults:
+- _self_
+
+danns_dir: "/network/projects/_groups/linclab_users/danns/subprojects/"
+project_name: "eg_ei_neuro"
+task_name: "reach_oc_egpaper"
+experiment_set: "debug"
+exp_dir: ${oc.env:SCRATCH}/${project_name}/${task_name}/${experiment_set}
+seed: 7 #${oc.env:SLURM_PROCID, 7}
+n_epochs: 6000 
+steps_per_epoch: 1
+batch_size: 500 #64
+run_oc_baseline: False
+#run_multiple_seeds: False # sweep over cfg.run_multiple_seeds: seeds = [7,8,9]
+
+exp:
+  relative_distance_loss: False
+  time_weighted_err: False
+  use_perturbations: False
+  obs_noise:  1e-4 
+  action_noise: 0.0 # not forwarded to env, so run value will be 0 
+  n_irrel_feats: 500
+  irrel_noise_type: OUmomentum 
+  irrel_noise_theta: 0.0005
+
+model:
+  hidden_size: 2500
+  weight_init_gain: 1.0 #4142135 #1.0
+  rnn_fan_mode: hidden
+  weight_distribution: log_normal
+  log_n_mean_std_ratio: 1.5 #lognormal_k : 2
+  layernorm: False
+
+opt:
+  # Defaults reproduce the published EG 500-irrel run (Fig 5):
+  # The es1_*.sh scripts set all opt.* values explicitly
+  update_algorithm: eg
+  lr: 0.4 
+  wd: 1e-6 
+  momentum: 0.925 
+  optimiser: sgd # adamw kept as an option from early exploration
+  action_reg_lambda: 0.1
+  hidden_reg_lambda: 0.1
+  max_grad_norm: 2.5 # 2.5 eg (500 irrel), 4 otherwise
+  lr_scheduler: False # False = cosine decay (all published runs); True = warmup/constant/cooldown ramp
+  truncation: False 
+  truncation_updates: False 
+
+logging:
+  use_wandb: False
+  wandb_tag: ${experiment_set}
+  log_local: False
+  log_plots: False
+  hash_exp_name: False
+  save_checkpoints_every_1k: False
+
+hydra:
+# see https://hydra.cc/docs/tutorials/basic/running_your_app/working_directory/
+  output_subdir: null
+  job:
+    chdir: False
+  run:
+    dir: ${oc.env:SCRATCH}/${project_name}/${task_name}/${experiment_set}
+    #dir: ${exp_dir} # for final experiments
+  sweep:
+    dir: ${oc.env:SCRATCH}/${project_name}/${task_name}/${experiment_set}/multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    #dir: ${exp_dir}/multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}

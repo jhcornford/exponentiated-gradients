@@ -1,0 +1,216 @@
+diff --git a/motornet/effector.py b/motornet/effector.py
+index fb271cd..0693137 100755
+--- a/motornet/effector.py
++++ b/motornet/effector.py
+@@ -1,3 +1,5 @@
++from __future__ import annotations
++
+ import torch as th
+ import numpy as np
+ from typing import Union, Any
+@@ -6,8 +8,7 @@ from torch.nn.parameter import Parameter
+ from motornet.skeleton import TwoDofArm, PointMass
+ from motornet.muscle import CompliantTendonHillMuscle, ReluMuscle
+ 
+-
+-DEVICE = th.device("cpu")
++DEVICE = th.device('cuda:0' if th.cuda.is_available() else 'cpu')
+ 
+ 
+ class Effector(th.nn.Module):
+@@ -57,6 +58,8 @@ class Effector(th.nn.Module):
+   ):
+     
+     super().__init__()
++    print(f"effector init: {self.device}")
++
+ 
+     self.__name__ = name
+     self.damping = Parameter(th.tensor(damping, dtype=th.float32), requires_grad=False)
+@@ -191,6 +194,12 @@ class Effector(th.nn.Module):
+ 
+     self._set_state(states)
+ 
++  @th.no_grad()
++  def grad_reset(self):
++    states = detach_tensors_in_structure(self.states)
++    #breakpoint()
++    self._set_state(states)
++
+   @property
+   def np_random(self) -> np.random.Generator:
+     """Returns the environment's internal :attr:`_np_random` that if not set will initialise with a random seed.
+@@ -470,7 +479,6 @@ class Effector(th.nn.Module):
+     moments = states["geometry"][:, 2:, :]
+     forces = states["muscle"][:, self.force_index:self.force_index+1, :]
+     joint_vel = states["joint"].chunk(2, dim=-1)[-1]
+-
+     generalized_forces = - th.sum(forces * moments, dim=-1) + joint_load - self.damping * joint_vel
+     
+     state_derivative = {
+@@ -779,3 +787,29 @@ class CompliantTendonArm26(RigidTendonArm26):
+     # This should greatly help with stability during numerical integration.
+     a0 = [0.182, 0.2362, 0.2859, 0.2355, 0.3329, 0.2989]
+     self.a0 = Parameter(th.tensor(np.array(a0).reshape((1, 1, 6)), dtype=th.float32), requires_grad=False)
++
++
++def detach_tensors_in_structure(data):
++    """
++    Recursively detaches all PyTorch tensors in a nested data structure.
++    
++    Args:
++        data (dict, list, tuple, torch.Tensor, or other): The data structure to process.
++    
++    Returns:
++        The same data structure with all tensors detached.
++    """
++    if isinstance(data, th.Tensor):
++        # return data.detach()
++        # return torch.tensor(data.data, requires_grad=True)
++        return data.clone().detach().requires_grad_(False)
++    elif isinstance(data, dict):
++        for key, value in data.items():
++            data[key] = detach_tensors_in_structure(value)
++        return data
++    elif isinstance(data, list):
++        return [detach_tensors_in_structure(item) for item in data]
++    elif isinstance(data, tuple):
++        return tuple(detach_tensors_in_structure(item) for item in data)
++    else:
++        return data  # For other data types, do nothing
+\ No newline at end of file
+diff --git a/motornet/environment.py b/motornet/environment.py
+index 681c06e..5a11d40 100755
+--- a/motornet/environment.py
++++ b/motornet/environment.py
+@@ -1,3 +1,5 @@
++from __future__ import annotations
++
+ import numpy as np
+ import torch as th
+ import gymnasium as gym
+@@ -5,7 +7,7 @@ from gymnasium.utils import seeding
+ from typing import Any
+ 
+ 
+-DEVICE = th.device("cpu")
++DEVICE = th.device('cuda:0' if th.cuda.is_available() else 'cpu')
+ 
+ 
+ class Environment(gym.Env, th.nn.Module):
+@@ -57,6 +59,9 @@ class Environment(gym.Env, th.nn.Module):
+   ):
+     
+     super().__init__(**kwargs)
++    # self.device = th.device("cuda")
++    # self.to(th.device("cuda"))
++    print(f"env init: {self.device}")
+ 
+     self.__name__ = name
+     self.effector = effector.to(self.device)
+diff --git a/motornet/muscle.py b/motornet/muscle.py
+index 877c4a2..d5f4ea6 100755
+--- a/motornet/muscle.py
++++ b/motornet/muscle.py
+@@ -1,9 +1,11 @@
++from __future__ import annotations
++
+ import torch as th
+ import numpy as np
+ from torch.nn.parameter import Parameter
+ 
+ 
+-DEVICE = th.device("cpu")
++DEVICE = th.device('cuda:0' if th.cuda.is_available() else 'cpu')
+ 
+ 
+ class Muscle(th.nn.Module):
+@@ -38,6 +40,8 @@ class Muscle(th.nn.Module):
+   ):
+     
+     super().__init__()
++    print(f"muscle: {self.device}")
++
+ 
+     self.input_dim = input_dim
+     self.state_name = []
+@@ -64,6 +68,7 @@ class Muscle(th.nn.Module):
+     """Returns the device of the first parameter in the module or the 1st CPU device if no parameter is yet declared.
+     The parameter search includes children modules.
+     """
++    return th.device('cuda:0' if th.cuda.is_available() else 'cpu')
+     try:
+       return next(self.parameters()).device
+     except:
+@@ -339,7 +344,7 @@ class MujocoHillMuscle(Muscle):
+     def to_tensor(x):
+       tensor = th.tensor(x, dtype=th.float32).reshape((1, 1, -1))
+       assert tensor.numel() == 1 or tensor.numel() == self.n_muscles
+-      return tensor
++      return tensor.to(self.device)
+ 
+     self.max_iso_force = Parameter(to_tensor(max_isometric_force), requires_grad=False)
+     self.l0_pe = Parameter(to_tensor(normalized_slack_muscle_length), requires_grad=False)
+@@ -352,7 +357,6 @@ class MujocoHillMuscle(Muscle):
+ 
+     self.dt = timestep
+ 
+-
+     # derived quantities
+     # a = 0.5*(lmin+1)
+     self.b = 0.5 * (1 + self.lmax)
+@@ -379,6 +383,7 @@ class MujocoHillMuscle(Muscle):
+     muscle_len = th.clip(musculotendon_len - self.l0_se, min=0.001) / self.l0_ce
+     muscle_vel = geometry_state[:, 1:2, :] / self.vmax
+ 
++    #breakpoint()
+     # muscle forces
+     x = th.where(
+       muscle_len <= 1,
+diff --git a/motornet/plotor.py b/motornet/plotor.py
+index 1616ece..8a642fe 100755
+--- a/motornet/plotor.py
++++ b/motornet/plotor.py
+@@ -1,5 +1,6 @@
+ """This module contains various functions for plotting data from `MotorNet` training and simulation sessions.
+ """
++from __future__ import annotations
+ 
+ import numpy as np
+ import matplotlib.pyplot as plt
+diff --git a/motornet/policy.py b/motornet/policy.py
+index 615df6f..dddfa25 100644
+--- a/motornet/policy.py
++++ b/motornet/policy.py
+@@ -1,3 +1,4 @@
++from __future__ import annotations
+ import torch as th
+ import torch.nn as nn
+ 
+diff --git a/motornet/skeleton.py b/motornet/skeleton.py
+index b613133..1c5a1da 100755
+--- a/motornet/skeleton.py
++++ b/motornet/skeleton.py
+@@ -1,10 +1,12 @@
++from __future__ import annotations
++
+ import torch as th
+ import numpy as np
+ from typing import Union
+ from torch.nn.parameter import Parameter
+ 
+ 
+-DEVICE = th.device("cpu")
++DEVICE = th.device('cuda:0' if th.cuda.is_available() else 'cpu')
+ 
+ 
+ class Skeleton(th.nn.Module):
+@@ -44,6 +46,8 @@ class Skeleton(th.nn.Module):
+          **kwargs):
+ 
+     super().__init__()
++    print(f"skel init: {self.device}")
++
+ 
+     self.__name__ = name
+     self.dof = dof

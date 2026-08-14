@@ -1,0 +1,38 @@
+defaults:
+- model: mlp
+- launcher: null
+- _self_
+
+hydra:
+  job:
+    chdir: False
+  run:
+    #dir: "${SLURM_TMPDIR}"
+    dir: "hydra_output"
+
+exp: 
+  use_wandb: False
+  wandb_project: "rofk_0718"
+  wandb_tag : "rofk_0718"
+
+n_epochs: 30
+seed: 7
+# Relative to the directory you launch train.py from (hydra job.chdir is False),
+# i.e. r_of_k/results — the same tree analysis/sparse_inputs_rofk.ipynb reads.
+project_results_dir: "results"
+
+dataset:
+  n_train_datapoints: 10000
+  n_val_datapoints: 1000
+  n_test_datapoints: 1000
+  n: 2000
+  k: 100
+  r: 50
+  batch_size: 500
+  p: 0.5
+
+opt:
+  update_algorithm: "gd"
+  lr: .01
+  wd: .001
+  momentum: 0

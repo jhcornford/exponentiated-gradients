@@ -1,0 +1,14 @@
+# @package _global_
+defaults:
+  - _self_
+  #- n_sweep
+  #- override hydra/launcher: submitit_slurm
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      model: mlp
+      seed: 1, 2, 3 
+      opt.update_algorithm: gd
+      opt.lr: 0.005, 0.01, 0.05, 0.1, 0.5, 1
+      opt.wd: 0

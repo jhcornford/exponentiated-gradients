@@ -1,0 +1,6 @@
+"Name","_wandb","test_top_1"
+"r50_imagenet_sgd_eg_split_bias_0.3_5e-5_0_ln_0_0_cosine_warmup_no_bn_default_False_gd_warmup10_FINAL","","0.7548400163650513"
+"r50_imagenet_sgd_eg_split_bias_0.3_5e-5_0_ln_0_0_cosine_warmup_no_bn_default_False_gd_warmup5_FINAL","","0.7488399744033813"
+"r50_imagenet_sgd_eg_split_bias_0.3_5e-5_0_ln_0_0_cosine_warmup_no_bn_default_False_gd_warmup1_FINAL","","0.7337999939918518"
+"r50_imagenet_sgd_0.5_5e-5_0_lognormal_0_0_cosine_no_bn_default_False_labels_FINAL","","0.7816600203514099"
+"r50_imagenet_sgd_eg_split_bias_0.4_5e-5_0_lognormal_0_0_cosine_no_bn_default_False_labels_FINAL","","0.7312600016593933"
