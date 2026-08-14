@@ -7,6 +7,8 @@ Olivier Codol, Pingsheng Li, Beverley A. Clark, Guillaume Lajoie, Blake A. Richa
 
 2026
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21936977.svg)](https://doi.org/10.5281/zenodo.21936977)
+
 ## Installation
 
 ```bash
