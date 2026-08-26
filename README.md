@@ -1,6 +1,6 @@
 # ExponentiatedGradients
 
-Code associated with the paper "Exponentiated gradients support effective learning in biologically relevant scenarios with brain-like synaptic distributions" 
+Code associated with the paper "Exponentiated gradient learning yields brain-like synaptic distributions" 
 
 Jonathan Cornford, Roman Pogodin, Arna Ghosh, Kaiwen Sheng, Brendan A. Bicknell,
 Olivier Codol, Pingsheng Li, Beverley A. Clark, Guillaume Lajoie, Blake A. Richards
